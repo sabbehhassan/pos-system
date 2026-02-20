@@ -1,4 +1,5 @@
 <x-filament::page>
+
 <div class="grid grid-cols-12 gap-6">
 
     <!-- PRODUCTS -->
@@ -87,7 +88,6 @@
                 <span>Rs {{ number_format($this->subtotal) }}</span>
             </div>
 
-            <!-- % DISCOUNT -->
             <div>
                 <label class="text-xs text-gray-500">% Discount</label>
                 <input
@@ -120,7 +120,7 @@
             </button>
 
             <button
-                wire:click="payNow"
+                wire:click="openPayment"
                 class="rounded-lg py-2 bg-primary-600 text-white hover:bg-primary-700"
             >
                 Pay Now
@@ -129,4 +129,91 @@
     </div>
 
 </div>
+
+<!-- ================= PAYMENT MODAL ================= -->
+@if($showPaymentModal)
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 space-y-4">
+        <h2 class="text-lg font-bold">Payment Method</h2>
+
+        <div class="space-y-2">
+            <label class="flex items-center gap-2">
+                <input type="radio" wire:model="paymentMethod" value="cash"> Cash
+            </label>
+            <label class="flex items-center gap-2">
+                <input type="radio" wire:model="paymentMethod" value="online"> Online
+            </label>
+            <label class="flex items-center gap-2">
+                <input type="radio" wire:model="paymentMethod" value="card"> Card Swipe
+            </label>
+        </div>
+
+        <div class="text-right font-bold text-lg">
+            Total: Rs {{ number_format($this->total) }}
+        </div>
+
+        <div class="flex gap-3">
+            <button
+                wire:click="completePayment"
+                class="flex-1 bg-green-600 text-white py-2 rounded-lg"
+            >
+                Done
+            </button>
+
+            <button
+                wire:click="$set('showPaymentModal', false)"
+                class="flex-1 bg-gray-300 py-2 rounded-lg"
+            >
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- ================= INVOICE SLIP MODAL ================= -->
+@if($showInvoiceModal && $lastSale)
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div id="invoice-area" class="bg-white w-full max-w-sm rounded-xl p-6 text-sm">
+        <h2 class="text-center text-lg font-bold mb-2">INVOICE</h2>
+
+        <p><strong>Invoice:</strong> {{ $lastSale->invoice_no }}</p>
+        <p><strong>Payment:</strong> {{ strtoupper($lastSale->payment_method) }}</p>
+        <p><strong>Date:</strong> {{ $lastSale->created_at->format('d M Y H:i') }}</p>
+
+        <hr class="my-2">
+
+        @foreach($lastSale->items as $item)
+            <div class="flex justify-between">
+                <span>{{ $item->product_name }} x{{ $item->qty }}</span>
+                <span>Rs {{ number_format($item->total) }}</span>
+            </div>
+        @endforeach
+
+        <hr class="my-2">
+
+        <div class="flex justify-between font-bold">
+            <span>Total</span>
+            <span>Rs {{ number_format($lastSale->total) }}</span>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+            <button
+                onclick="window.print()"
+                class="flex-1 bg-primary-600 text-white py-2 rounded"
+            >
+                Print
+            </button>
+
+            <button
+                wire:click="closeInvoice"
+                class="flex-1 bg-gray-300 py-2 rounded"
+            >
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
 </x-filament::page>
