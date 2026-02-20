@@ -4,7 +4,12 @@ namespace App\Filament\Admin\Pages;
 
 use Filament\Pages\Page;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+
 use Filament\Support\Icons\Heroicon;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,36 +17,42 @@ use Illuminate\Database\Eloquent\Collection;
 class PosScreen extends Page
 {
     protected static ?string $navigationLabel = 'POS';
-
     protected static BackedEnum|string|null $navigationIcon = Heroicon::ShoppingCart;
-
     protected static ?int $navigationSort = 10;
 
-    /** ----------------------------
-     *  STATE (IMPORTANT FIX)
-     *  ---------------------------- */
-    public Collection $products;   // ✅ NOT array
-    public array $cart = [];       // cart array hi rahegi
+    public Collection $products;
+    public array $cart = [];
 
-    /** ----------------------------
-     *  VIEW
-     *  ---------------------------- */
+    // 🔍 SEARCH
+    public string $search = '';
+
+    // ✅ ONLY PERCENT DISCOUNT
+    public float $discountPercent = 0;
+
     public function getView(): string
     {
         return 'filament.admin.pages.pos-screen';
     }
 
-    /** ----------------------------
-     *  LIFECYCLE
-     *  ---------------------------- */
     public function mount(): void
     {
-        $this->products = Product::where('stock', '>', 0)->get();
+        $this->loadProducts();
     }
 
-    /** ----------------------------
-     *  CART LOGIC
-     *  ---------------------------- */
+    public function updatedSearch(): void
+    {
+        $this->loadProducts();
+    }
+
+    protected function loadProducts(): void
+    {
+        $this->products = Product::where('stock', '>', 0)
+            ->where('name', 'like', "%{$this->search}%")
+            ->get();
+    }
+
+    /* ---------------- CART ---------------- */
+
     public function addToCart(int $productId): void
     {
         $product = Product::findOrFail($productId);
@@ -78,34 +89,66 @@ class PosScreen extends Page
         }
     }
 
-    public function getSubtotalProperty(): int
+    /* ---------------- CALCULATIONS ---------------- */
+
+    public function getSubtotalProperty(): float
     {
         return collect($this->cart)
             ->sum(fn ($item) => $item['price'] * $item['qty']);
     }
 
-    /** ----------------------------
-     *  CHECKOUT
-     *  ---------------------------- */
+    public function getDiscountAmountProperty(): float
+    {
+        return ($this->subtotal * min($this->discountPercent, 100)) / 100;
+    }
+
+    public function getTotalProperty(): float
+    {
+        return max($this->subtotal - $this->discountAmount, 0);
+    }
+
+    /* ---------------- CHECKOUT ---------------- */
+
     public function clearCart(): void
     {
         $this->cart = [];
+        $this->discountPercent = 0;
     }
 
     public function payNow(): void
-    {
-        if (empty($this->cart)) {
-            return;
+{
+    if (empty($this->cart)) return;
+
+    DB::transaction(function () {
+
+        $sale = Sale::create([
+            'user_id'          => Auth::id(),   // ✅ FIX
+            'invoice_no'       => 'INV-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5)),
+            'subtotal'         => $this->subtotal,
+            'discount_percent' => $this->discountPercent,
+            'discount_amount'  => $this->discountAmount,
+            'total'            => $this->total,
+            'payment_method'   => 'cash',
+        ]);
+
+        foreach ($this->cart as $item) {
+
+            SaleItem::create([
+    'sale_id'      => $sale->id,
+    'product_id'   => $item['id'],
+    'product_name' => $item['name'],   // ✅ FIX
+    'qty'          => $item['qty'],
+    'price'        => $item['price'],
+    'total'        => $item['price'] * $item['qty'],
+]);
+
+
+            Product::where('id', $item['id'])
+                ->decrement('stock', $item['qty']);
         }
+    });
 
-        DB::transaction(function () {
-            foreach ($this->cart as $item) {
-                Product::where('id', $item['id'])
-                    ->decrement('stock', $item['qty']);
-            }
-        });
-
-        $this->clearCart();
-        $this->mount(); // reload products
-    }
+    $this->clearCart();
+    $this->loadProducts();
+}
 }
