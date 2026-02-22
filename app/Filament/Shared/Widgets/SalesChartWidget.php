@@ -1,17 +1,19 @@
 <?php
 
-namespace App\Filament\Admin\Widgets;
+namespace App\Filament\Shared\Widgets;
 
 use Filament\Widgets\LineChartWidget;
 use App\Models\Sale;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 
 class SalesChartWidget extends LineChartWidget
 {
-    // ✅ NON-static (this is the fix)
+    // ✅ KEEP NON-STATIC
     protected ?string $heading = 'Last 7 Days Sales';
 
-    protected static ?int $sort = 3;
+    // ✅ UNIQUE SORT (VERY IMPORTANT)
+    protected static ?int $sort = 2;
 
     protected function getData(): array
     {
@@ -31,19 +33,22 @@ class SalesChartWidget extends LineChartWidget
             'datasets' => [
                 [
                     'label' => 'Sales (PKR)',
-                    'data' => $data,
-                    'borderColor' => '#f97316',
-                    'backgroundColor' => 'rgba(249,115,22,0.3)',
-                    'tension' => 0.4,
-                    'fill' => true,
+                    'data'  => $data,
                 ],
             ],
             'labels' => $labels,
         ];
     }
+
     public static function canView(): bool
-{
-    return auth()->user()->isAdmin()
-        || auth()->user()->isManager();
-}
+    {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        return in_array(
+            Filament::getCurrentPanel()?->getId(),
+            ['admin', 'manager']
+        );
+    }
 }

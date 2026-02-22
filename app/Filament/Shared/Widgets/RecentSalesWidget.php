@@ -1,19 +1,21 @@
 <?php
 
-namespace App\Filament\Admin\Widgets;
+namespace App\Filament\Shared\Widgets;
 
 use App\Models\Sale;
 use Filament\Tables;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use Filament\Facades\Filament;
 
 class RecentSalesWidget extends TableWidget
 {
     protected static ?string $heading = 'Recent Sales';
+
+    // ✅ UNIQUE SORT
     protected static ?int $sort = 4;
 
-    protected function getTableQuery(): Builder|Relation|null
+    protected function getTableQuery(): Builder
     {
         return Sale::query()
             ->latest()
@@ -29,25 +31,33 @@ class RecentSalesWidget extends TableWidget
 
             Tables\Columns\TextColumn::make('total')
                 ->label('Amount')
-                ->money('PKR')
+                ->formatStateUsing(fn ($state) => 'PKR ' . number_format($state))
                 ->weight('bold'),
 
             Tables\Columns\BadgeColumn::make('payment_method')
                 ->label('Payment')
-                ->colors([
-                    'success' => 'cash',
-                    'warning' => 'online',
-                    'info'    => 'card',
-                ]),
+                ->color(fn (string $state) => match ($state) {
+                    'cash'   => 'success',
+                    'online' => 'warning',
+                    'card'   => 'info',
+                    default  => 'gray',
+                }),
 
             Tables\Columns\TextColumn::make('created_at')
                 ->label('Date')
                 ->since(),
         ];
     }
+
     public static function canView(): bool
-{
-    return auth()->user()->isAdmin()
-        || auth()->user()->isCashier();
-}
+    {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        return in_array(
+            Filament::getCurrentPanel()?->getId(),
+            ['admin', 'manager']
+        );
+    }
 }

@@ -3,7 +3,7 @@
 namespace App\Filament\Admin\Pages;
 
 use Filament\Pages\Dashboard as BaseDashboard;
-use App\Filament\Admin\Widgets\{
+use App\Filament\Shared\Widgets\{
     WelcomeWidget,
     DashboardStats,
     SalesChartWidget,

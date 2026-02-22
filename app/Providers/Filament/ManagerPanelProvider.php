@@ -2,15 +2,12 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Panel;
+use Filament\PanelProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
-use Filament\Panel;
-use Filament\PanelProvider;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -18,40 +15,43 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class AdminPanelProvider extends PanelProvider
+// ✅ SHARED WIDGETS (IMPORT)
+use App\Filament\Shared\Widgets\{
+    WelcomeWidget,
+    DashboardStats,
+    SalesChartWidget,
+    LowStockWidget,
+    RecentSalesWidget
+};
+
+class ManagerPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
+            ->id('manager')
+            ->path('manager')
 
-            ->login(\App\Filament\Admin\Auth\Login::class)
+            ->login(\App\Filament\Manager\Auth\Login::class)
             ->viteTheme('resources/css/filament/manager/theme.css')
 
-            ->pages([
-                Dashboard::class,
-            ])
+            ->discoverPages(
+                in: app_path('Filament/Manager/Pages'),
+                for: 'App\\Filament\\Manager\\Pages'
+            )
 
             ->discoverResources(
-                in: app_path('Filament/Admin/Resources'),
-                for: 'App\\Filament\\Admin\\Resources'
+                in: app_path('Filament/Manager/Resources'),
+                for: 'App\\Filament\\Manager\\Resources'
             )
 
-            ->discoverPages(
-                in: app_path('Filament/Admin/Pages'),
-                for: 'App\\Filament\\Admin\\Pages'
-            )
-
-            ->discoverWidgets(
-                in: app_path('Filament/shared/Widgets'),
-                for: 'App\\Filament\\Shared\\Widgets'
-            )
-
+            // ✅ EXPLICIT WIDGET REGISTRATION (MANDATORY)
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                WelcomeWidget::class,
+                DashboardStats::class,
+                SalesChartWidget::class,
+                LowStockWidget::class,
+                RecentSalesWidget::class,
             ])
 
             ->middleware([
