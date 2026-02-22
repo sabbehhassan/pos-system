@@ -41,4 +41,9 @@ class SalesChartWidget extends LineChartWidget
             'labels' => $labels,
         ];
     }
+    public static function canView(): bool
+{
+    return auth()->user()->isAdmin()
+        || auth()->user()->isManager();
+}
 }

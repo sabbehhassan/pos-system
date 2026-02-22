@@ -55,4 +55,9 @@ class DashboardStats extends StatsOverviewWidget
                 ->color('warning'),
         ];
     }
+    public static function canView(): bool
+{
+    return auth()->user()->isAdmin()
+        || auth()->user()->isManager();
+}
 }

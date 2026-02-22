@@ -43,4 +43,9 @@ class LowStockWidget extends TableWidget
                 ]),
         ];
     }
+    public static function canView(): bool
+{
+    return auth()->user()->isAdmin()
+        || auth()->user()->isManager();
+}
 }
