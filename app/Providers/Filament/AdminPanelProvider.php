@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
 
             ->login(\App\Filament\Admin\Auth\Login::class)
-            ->viteTheme('resources/css/filament/manager/theme.css')
+            ->viteTheme('resources/css/filament/admin/theme.css')
 
             ->pages([
                 Dashboard::class,
