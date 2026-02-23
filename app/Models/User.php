@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
@@ -14,7 +16,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // ✅ added
+        'role', // admin | manager | cashier
     ];
 
     protected $hidden = [
@@ -30,8 +32,26 @@ class User extends Authenticatable
         ];
     }
 
-    // ✅ ROLE HELPERS (SRS COMPLIANT)
+    /*
+    |--------------------------------------------------------------------------
+    | 🔐 Filament Panel Access Control (MOST IMPORTANT)
+    |--------------------------------------------------------------------------
+    */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return match ($panel->getId()) {
+            'admin'   => $this->isAdmin(),
+            'manager' => $this->isManager(),
+            'cashier' => $this->isCashier(),
+            default   => false,
+        };
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ ROLE HELPERS (CLEAN & READABLE)
+    |--------------------------------------------------------------------------
+    */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

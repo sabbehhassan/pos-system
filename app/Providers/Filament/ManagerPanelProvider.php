@@ -31,8 +31,9 @@ class ManagerPanelProvider extends PanelProvider
         return $panel
             ->id('manager')
             ->path('manager')
+            ->login(false)
+            ->authGuard('manager')
 
-            ->login(\App\Filament\Manager\Auth\Login::class)
             ->viteTheme('resources/css/filament/manager/theme.css')
 
             ->discoverPages(
