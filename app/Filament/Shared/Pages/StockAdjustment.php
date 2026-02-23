@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Pages;
+namespace App\Filament\Shared\Pages;
 
 use Filament\Pages\Page;
 use App\Models\Product;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Pages;
+namespace App\Filament\Shared\Pages;
 
 use Filament\Pages\Dashboard as BaseDashboard;
 use App\Filament\Shared\Widgets\{

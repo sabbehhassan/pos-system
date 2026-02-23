@@ -15,36 +15,21 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class ManagerPanelProvider extends PanelProvider
+class CashierPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->id('manager')
-            ->path('manager')
-            ->login(false)
-            ->authGuard('manager')
+            ->id('cashier')              // 🔑 MUST MATCH User model
+            ->path('cashier')
+            ->authGuard('cashier')
+            ->login(false)               // 🔥 Custom login only
 
-            ->viteTheme('resources/css/filament/manager/theme.css')
-
+            // ❌ No dashboard, no widgets
             ->discoverPages(
     in: app_path('Filament/Shared/Pages'),
     for: 'App\\Filament\\Shared\\Pages'
 )
-
-            ->discoverResources(
-                in: app_path('Filament/Manager/Resources'),
-                for: 'App\\Filament\\Manager\\Resources'
-            )
-
-            // ✅ EXPLICIT WIDGET REGISTRATION (MANDATORY)
-            ->widgets([
-                WelcomeWidget::class,
-                DashboardStats::class,
-                SalesChartWidget::class,
-                LowStockWidget::class,
-                RecentSalesWidget::class,
-            ])
 
             ->middleware([
                 EncryptCookies::class,

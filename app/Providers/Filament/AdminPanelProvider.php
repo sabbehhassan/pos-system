@@ -39,9 +39,9 @@ class AdminPanelProvider extends PanelProvider
             )
 
             ->discoverPages(
-                in: app_path('Filament/Admin/Pages'),
-                for: 'App\\Filament\\Admin\\Pages'
-            )
+    in: app_path('Filament/Shared/Pages'),
+    for: 'App\\Filament\\Shared\\Pages'
+)
 
             ->discoverWidgets(
                 in: app_path('Filament/shared/Widgets'),

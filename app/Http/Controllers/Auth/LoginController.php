@@ -10,46 +10,42 @@ class LoginController extends Controller
 {
     public function login(Request $request)
     {
-        // ✅ Validate input
         $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        $credentials = $request->only('email', 'password');
-
-        // ✅ Step 1: Login using web guard (temporary)
-        if (! Auth::guard('web')->attempt($credentials)) {
+        // Step 1: Login via web guard
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return back()->withErrors([
                 'email' => 'Invalid credentials',
             ]);
         }
 
-        // ✅ Step 2: Regenerate session (VERY IMPORTANT)
+        // Step 2: Regenerate session
         $request->session()->regenerate();
 
-        $user = Auth::guard('web')->user();
-        
+        $user = Auth::user();
 
-        // ✅ Step 3: Logout from web guard
-        Auth::guard('web')->logout();
+        // Step 3: Logout ALL guards safely
+        Auth::logout();
 
-        // ✅ Step 4: Login into role-based guard
-        switch ($user->role) {
+        // Step 4: Login into role-based guard
+        switch (strtolower($user->role)) {
             case 'admin':
                 Auth::guard('admin')->login($user);
-                return redirect()->intended('/admin');
+                return redirect()->to('/admin');
 
             case 'manager':
                 Auth::guard('manager')->login($user);
-                return redirect()->intended('/manager');
+                return redirect()->to('/manager');
 
             case 'cashier':
                 Auth::guard('cashier')->login($user);
-                return redirect()->intended('/cashier');
+                return redirect()->to('/cashier');
 
             default:
-                abort(403, 'Unauthorized role');
+                return redirect('/login');
         }
     }
 }
