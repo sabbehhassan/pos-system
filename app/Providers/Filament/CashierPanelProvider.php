@@ -23,7 +23,8 @@ class CashierPanelProvider extends PanelProvider
             ->id('cashier')              // 🔑 MUST MATCH User model
             ->path('cashier')
             ->authGuard('cashier')
-            ->login(false)               // 🔥 Custom login only
+            ->login(false)   
+            ->viteTheme('resources/css/filament/cashier/theme.css')            // 🔥 Custom login only
 
             // ❌ No dashboard, no widgets
             ->discoverPages(

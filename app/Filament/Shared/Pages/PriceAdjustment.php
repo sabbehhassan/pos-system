@@ -20,6 +20,11 @@ class PriceAdjustment extends Page implements Forms\Contracts\HasForms
     protected static ?string $navigationLabel = 'Price Adjustment';
 
     protected string $view = 'filament.admin.pages.price-adjustment';
+    public static function shouldRegisterNavigation(): bool
+{
+    return auth()->check()
+        && in_array(auth()->user()->role, ['admin', 'manager']);
+}
 
     public static function getNavigationGroup(): string
     {
@@ -89,4 +94,5 @@ class PriceAdjustment extends Page implements Forms\Contracts\HasForms
 
         $this->reset(['product_id', 'new_price', 'reason']);
     }
+    
 }

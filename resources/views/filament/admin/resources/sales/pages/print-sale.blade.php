@@ -136,9 +136,10 @@
     <table class="invoice-meta">
         <tr>
             <td>
-                <strong>Invoice #:</strong> {{ $record->invoice_no }}<br>
-                <strong>Date:</strong> {{ $record->created_at->format('d M Y H:i') }}
-            </td>
+    <strong>Invoice #:</strong> {{ $record->invoice_no }}<br>
+    <strong>Date:</strong> {{ $record->created_at->format('d M Y H:i') }}<br>
+    <strong>Customer:</strong> {{ $record->customer_name ?? 'Walk-in Customer' }}
+</td>
             <td align="right">
                 <strong>Cashier:</strong> {{ $record->user?->name ?? '-' }}<br>
                 <strong>Payment:</strong> {{ ucfirst($record->payment_method) }}

@@ -40,10 +40,10 @@ class ViewSale extends ViewRecord
                                 ucfirst($record->payment_method)
                             ),
 
-                        Text::make('Status')
-                            ->content(fn ($record) =>
-                                ucfirst($record->status)
-                            ),
+                        Text::make('Customer')
+    ->content(fn ($record) =>
+        $record->customer_name ?? 'Walk-in Customer'
+    ),
 
                         Text::make('Total')
                             ->content(fn ($record) =>

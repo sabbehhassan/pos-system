@@ -2,7 +2,7 @@
 
 <div class="grid grid-cols-12 gap-6">
 
-    <!-- PRODUCTS -->
+    <!-- ================= PRODUCTS ================= -->
     <div class="col-span-12 lg:col-span-8 bg-white rounded-xl p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 class="text-lg font-semibold">Products</h2>
@@ -39,11 +39,50 @@
         </div>
     </div>
 
-    <!-- CURRENT SALE -->
+    <!-- ================= CURRENT SALE ================= -->
     <div class="col-span-12 lg:col-span-4 bg-white rounded-xl p-6 flex flex-col">
         <h2 class="text-lg font-semibold mb-4">Current Sale</h2>
 
-        <!-- CART ITEMS -->
+        <!-- ===== CUSTOMER SECTION ===== -->
+        <div class="mb-4 bg-gray-50 p-3 rounded">
+            <div class="flex items-center justify-between mb-2">
+                <strong>Customer</strong>
+
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" wire:model="walkInCustomer">
+                    Walk-in
+                </label>
+            </div>
+
+            <input
+                type="text"
+                wire:model.debounce.300ms="customerSearch"
+                placeholder="Search customer name or phone"
+                class="w-full rounded border-gray-300 text-sm"
+                @if($walkInCustomer) disabled @endif
+            >
+
+            @if($customers && $customers->count())
+                <div class="border rounded mt-1 bg-white max-h-40 overflow-y-auto">
+                    @foreach($customers as $cust)
+                        <div
+                            wire:click="selectCustomer({{ $cust->id }})"
+                            class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        >
+                            {{ $cust->name }} ({{ $cust->phone }})
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @if($customerName)
+                <div class="text-green-600 text-sm mt-1">
+                    Selected: {{ $customerName }}
+                </div>
+            @endif
+        </div>
+
+        <!-- ===== CART ITEMS ===== -->
         <div class="flex-1 space-y-3 overflow-y-auto pr-1">
             @forelse ($cart as $item)
                 <div class="border rounded-lg p-3 flex justify-between items-center">
@@ -81,7 +120,7 @@
             @endforelse
         </div>
 
-        <!-- TOTALS -->
+        <!-- ===== TOTALS ===== -->
         <div class="mt-4 space-y-3 border-t pt-4 text-sm">
             <div class="flex justify-between">
                 <span>Subtotal</span>
@@ -110,7 +149,7 @@
             </div>
         </div>
 
-        <!-- ACTIONS -->
+        <!-- ===== ACTIONS ===== -->
         <div class="mt-4 grid grid-cols-2 gap-3">
             <button
                 wire:click="clearCart"
@@ -136,7 +175,7 @@
     <div class="bg-white w-full max-w-md rounded-xl p-6 space-y-4">
         <h2 class="text-lg font-bold">Payment Method</h2>
 
-        <div class="space-y-2">
+        <div class="space-y-2 text-sm">
             <label class="flex items-center gap-2">
                 <input type="radio" wire:model="paymentMethod" value="cash"> Cash
             </label>
@@ -171,13 +210,14 @@
 </div>
 @endif
 
-<!-- ================= INVOICE SLIP MODAL ================= -->
+<!-- ================= INVOICE MODAL ================= -->
 @if($showInvoiceModal && $lastSale)
 <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div id="invoice-area" class="bg-white w-full max-w-sm rounded-xl p-6 text-sm">
         <h2 class="text-center text-lg font-bold mb-2">INVOICE</h2>
 
         <p><strong>Invoice:</strong> {{ $lastSale->invoice_no }}</p>
+        <p><strong>Customer:</strong> {{ $lastSale->customer_name }}</p>
         <p><strong>Payment:</strong> {{ strtoupper($lastSale->payment_method) }}</p>
         <p><strong>Date:</strong> {{ $lastSale->created_at->format('d M Y H:i') }}</p>
 

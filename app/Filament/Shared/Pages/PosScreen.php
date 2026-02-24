@@ -2,52 +2,109 @@
 
 namespace App\Filament\Shared\Pages;
 
-use Filament\Pages\Page;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Collection;
-use Filament\Support\Icons\Heroicon;
-use BackedEnum;
+use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 
 class PosScreen extends Page
 {
-    protected static ?string $navigationLabel = 'POS';
+    // ✅ Filament v3: view
+    protected string $view = 'filament.admin.pages.pos-screen';
 
-    protected static BackedEnum|string|null $navigationIcon = Heroicon::ShoppingCart; 
-    protected static ?int $navigationSort = 10;
+    /* ================= SIDEBAR CONFIG (FINAL & CORRECT) ================= */
 
+public static function getNavigationLabel(): string
+{
+    return 'POS';
+}
+
+public static function getNavigationIcon(): string
+{
+    return 'heroicon-o-shopping-cart';
+}
+
+public static function getNavigationSort(): int
+{
+    return 10;
+}
+
+    /* ================= CUSTOMER ================= */
+
+    public bool $walkInCustomer = false;
+    public string $customerSearch = '';
+    public ?int $customerId = null;
+    public ?string $customerName = null;
+    public Collection $customers;
+
+    /* ================= PRODUCTS / CART ================= */
 
     public Collection $products;
     public array $cart = [];
-
     public string $search = '';
-    public float $discountPercent = 0;
+    public $discountPercent = 0;
 
-    // 🔵 PAYMENT FLOW STATES
+    /* ================= PAYMENT ================= */
+
     public bool $showPaymentModal = false;
     public bool $showInvoiceModal = false;
-
     public string $paymentMethod = 'cash';
     public ?Sale $lastSale = null;
-
-    public function getView(): string
-    {
-        return 'filament.admin.pages.pos-screen';
-    }
 
     public function mount(): void
     {
         $this->loadProducts();
+        $this->customers = collect();
+    }
+    public static function canAccess(): bool
+    {
+    return in_array(auth()->user()?->role, ['admin', 'cashier']);
     }
 
-    public function updatedSearch(): void
+    /* ================= CUSTOMER LOGIC ================= */
+
+    public function updatedCustomerSearch(): void
     {
-        $this->loadProducts();
+        if ($this->walkInCustomer || strlen($this->customerSearch) < 2) {
+            $this->customers = new Collection();
+            return;
+        }
+
+        $this->customers = Customer::where('name', 'like', "%{$this->customerSearch}%")
+            ->orWhere('phone', 'like', "%{$this->customerSearch}%")
+            ->limit(10)
+            ->get();
     }
+
+    public function selectCustomer(int $id): void
+    {
+        $customer = Customer::find($id);
+        if (! $customer) return;
+
+        $this->customerId = $customer->id;
+        $this->customerName = $customer->name;
+        $this->customerSearch = $customer->name;
+        $this->customers = new Collection();
+    }
+
+    public function updatedWalkInCustomer(): void
+    {
+        if ($this->walkInCustomer) {
+            $this->customerId = null;
+            $this->customerName = 'Walk-in Customer';
+            $this->customerSearch = '';
+            $this->customers = new Collection();
+        } else {
+            $this->customerName = null;
+        }
+    }
+
+    /* ================= PRODUCTS ================= */
 
     protected function loadProducts(): void
     {
@@ -55,8 +112,6 @@ class PosScreen extends Page
             ->where('name', 'like', "%{$this->search}%")
             ->get();
     }
-
-    /* ---------------- CART ---------------- */
 
     public function addToCart(int $productId): void
     {
@@ -78,9 +133,7 @@ class PosScreen extends Page
 
     public function increaseQty(int $id): void
     {
-        $product = Product::findOrFail($id);
-
-        if ($this->cart[$id]['qty'] < $product->stock) {
+        if ($this->cart[$id]['qty'] < Product::find($id)->stock) {
             $this->cart[$id]['qty']++;
         }
     }
@@ -94,17 +147,18 @@ class PosScreen extends Page
         }
     }
 
-    /* ---------------- CALCULATIONS ---------------- */
+    /* ================= TOTALS ================= */
 
     public function getSubtotalProperty(): float
     {
-        return collect($this->cart)
-            ->sum(fn ($item) => $item['price'] * $item['qty']);
+        return collect($this->cart)->sum(fn ($i) => $i['price'] * $i['qty']);
     }
 
     public function getDiscountAmountProperty(): float
     {
-        return ($this->subtotal * min($this->discountPercent, 100)) / 100;
+    $percent = (float) $this->discountPercent;
+
+    return ($this->subtotal * min($percent, 100)) / 100;
     }
 
     public function getTotalProperty(): float
@@ -112,23 +166,26 @@ class PosScreen extends Page
         return max($this->subtotal - $this->discountAmount, 0);
     }
 
-    /* ---------------- CHECKOUT FLOW ---------------- */
+    /* ================= CHECKOUT ================= */
 
-    // 🔵 STEP 1: Pay Now → Open Payment Modal
     public function openPayment(): void
     {
-        if (empty($this->cart)) return;
-
-        $this->showPaymentModal = true;
+        if (! empty($this->cart)) {
+            $this->showPaymentModal = true;
+        }
     }
 
-    // 🔵 STEP 2: Done → Save Sale
     public function completePayment(): void
     {
         DB::transaction(function () {
 
             $sale = Sale::create([
-                'user_id'          => Auth::id(),
+                'user_id'       => Auth::id(),
+                'customer_id'   => $this->customerId,
+                'customer_name' => $this->walkInCustomer
+                    ? 'Walk-in Customer'
+                    : $this->customerName,
+
                 'invoice_no'       => 'INV-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5)),
                 'subtotal'         => $this->subtotal,
                 'discount_percent' => $this->discountPercent,
@@ -148,8 +205,7 @@ class PosScreen extends Page
                     'total'        => $item['price'] * $item['qty'],
                 ]);
 
-                Product::where('id', $item['id'])
-                    ->decrement('stock', $item['qty']);
+                Product::where('id', $item['id'])->decrement('stock', $item['qty']);
             }
 
             $this->lastSale = $sale;
@@ -157,7 +213,6 @@ class PosScreen extends Page
 
         $this->showPaymentModal = false;
         $this->showInvoiceModal = true;
-
         $this->clearCart();
         $this->loadProducts();
     }

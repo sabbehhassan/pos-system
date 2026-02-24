@@ -19,7 +19,7 @@ class WelcomeWidget extends Widget
 
         return in_array(
             Filament::getCurrentPanel()?->getId(),
-            ['admin', 'manager']
+            ['admin', 'manager' , 'cashier']
         );
     }
 }

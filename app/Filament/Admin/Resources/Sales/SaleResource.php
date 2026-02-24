@@ -54,20 +54,19 @@ class SaleResource extends Resource
                     ->money('PKR')
                     ->sortable(),
 
-                Tables\Columns\BadgeColumn::make('status')
-                    ->label('Status')
-                    ->colors([
-                        'success' => 'paid',
-                        'danger'  => 'cancelled',
-                    ]),
-            ])
+                Tables\Columns\TextColumn::make('customer_name')
+                ->label('Customer')
+                ->searchable()
+                ->sortable()
+                ->default('-'),
+                  ])
             ->defaultSort('created_at', 'desc');
-    }
+               }
 
     /* ================= PAGES ================= */
-   public static function getPages(): array
-{
-    return [
+          public static function getPages(): array
+              {
+             return [
         'index'  => Pages\ListSales::route('/'),
         'create' => Pages\CreateSale::route('/create'),
         'edit'   => Pages\EditSale::route('/{record}/edit'),

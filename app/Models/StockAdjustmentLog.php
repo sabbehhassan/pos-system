@@ -13,4 +13,5 @@ class StockAdjustmentLog extends Model
         'reason',
         'created_by',
     ];
+    
 }

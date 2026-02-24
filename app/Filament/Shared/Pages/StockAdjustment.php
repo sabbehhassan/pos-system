@@ -21,6 +21,11 @@ class StockAdjustment extends Page implements Forms\Contracts\HasForms
 
     protected string $view = 'filament.admin.pages.stock-adjustment';
 
+    public static function shouldRegisterNavigation(): bool
+{
+    return auth()->check()
+        && in_array(auth()->user()->role, ['admin', 'manager']);
+}
     public static function getNavigationGroup(): string
     {
         return 'Inventory';
@@ -115,4 +120,5 @@ class StockAdjustment extends Page implements Forms\Contracts\HasForms
         // 🔄 RESET FORM
         $this->reset(['product_id', 'qty', 'type', 'reason']);
     }
+    
 }
